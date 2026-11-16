@@ -115,6 +115,13 @@ try{
   await check("JSON.parse(localStorage.getItem('planner_data_v1')).revision===1",'first save increments revision');
 
   await check("document.querySelectorAll('.tag-link').length===2",'card tags render as interactive buttons');
+
+  await check("document.querySelector('#today-label').textContent.includes('년') && document.querySelector('#today-label').textContent.includes('요일')",'header displays localized weekday');
+  await evaluate("document.querySelector('[data-action=cycle-tag-mode]').click()");
+  await check("document.querySelector('#tag-mode').value==='OR'",'mobile AND/OR chip synchronizes underlying select');
+  await evaluate("document.querySelector('[data-action=cycle-tag-mode]').click()");
+  await check("document.querySelector('#tag-mode').value==='AND' && JSON.parse(localStorage.getItem('planner_data_v1')).revision===1",'tag logic toggle does not save task data');
+
   await evaluate("document.querySelector('[data-action=theme-toggle]').click()");
   await check("document.body.classList.contains('dark') && localStorage.getItem('planner_theme_v1')==='dark'",'dark mode setting persists separately');
   await check("JSON.parse(localStorage.getItem('planner_data_v1')).revision===1",'changing theme leaves task revision unchanged');
