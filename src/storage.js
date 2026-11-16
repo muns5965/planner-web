@@ -1,6 +1,7 @@
 import { classifyRaw, validateData } from './validator.js';
 
-export const DEFAULT_STORAGE_KEY = 'franklin_planner_data_v1';
+export const DEFAULT_STORAGE_KEY = 'planner_data_v1';
+const LEGACY_STORAGE_KEY = 'franklin_planner_data_v1'; // read only for one-time migration
 const noopLock = async fn => fn();
 const clone = value => structuredClone(value);
 const freezeDeep = value => {
@@ -26,7 +27,26 @@ export function createStorageAdapter(storage, {
   let recoverySnapshot = null;
   let recoveryMode = false;
 
+  // Copy first, verify byte-for-byte, then retire the old key. Never treat
+  // a failed migration as an empty first run; that could hide user tasks.
+  // Explicit custom storage keys are not affected.
+  function migrateLegacyIfNeeded() {
+    if (key !== DEFAULT_STORAGE_KEY) return { ok: true };
+    try {
+      if (storage.getItem(key) !== null) return { ok: true };
+      const legacy = storage.getItem(LEGACY_STORAGE_KEY);
+      if (legacy === null) return { ok: true };
+      storage.setItem(key, legacy);
+      if (storage.getItem(key) !== legacy) return failure('unavailable');
+      try { storage.removeItem(LEGACY_STORAGE_KEY); } catch {
+        // New key is verified; preserve the legacy copy if cleanup is blocked.
+      }
+      return { ok: true };
+    } catch { return failure('unavailable'); }
+  }
+
   function load() {
+    if (!migrateLegacyIfNeeded().ok) return { status: 'unavailable' };
     try {
       const raw = storage.getItem(key);
       const result = classifyRaw(raw);
@@ -44,6 +64,7 @@ export function createStorageAdapter(storage, {
   }
 
   function exportRaw() {
+    if (!migrateLegacyIfNeeded().ok) return failure('unavailable');
     try { return { ok: true, raw: storage.getItem(key) }; }
     catch { return failure('unavailable'); }
   }
@@ -56,6 +77,7 @@ export function createStorageAdapter(storage, {
   async function update(expectedRevision, transform) {
     if (recoveryMode) return failure('corrupt');
     return withLock(async () => {
+      if (!migrateLegacyIfNeeded().ok) return failure('unavailable');
       let raw;
       try { raw = storage.getItem(key); }
       catch { return failure('unavailable'); }
