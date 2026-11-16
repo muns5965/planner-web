@@ -131,7 +131,7 @@ function renderTask(task){
     buttons+='<button type="button" data-action="trash" data-id="'+id+'">휴지통</button>';
   }
   const movable=state.view==='active'&&!hasActiveFilter(state);
-  const drag=movable?'<span class="drag-handle" draggable="true" tabindex="0" role="button" aria-label="끌어서 순서 변경" data-id="'+id+'" title="끌어서 순서 변경">⋮⋮</span>':'';
+  const drag=movable?'<span class="drag-handle" draggable="true" tabindex="0" role="button" aria-label="끌어서 순서 변경. 키보드 위아래 화살표로 이동" data-id="'+id+'" title="끌어서 순서 변경">⋮⋮</span>':'';
   return '<article class="task-row" data-id="'+id+'" data-grade="'+escapeHtml(task.grade)+'">'+
     '<span class="rank">'+rank+'</span><div class="task-content"><button class="task-title" type="button" data-action="edit" data-id="'+id+'">'+escapeHtml(task.title)+'</button>'+
     (task.body?'<p class="task-body">'+escapeHtml(task.body)+'</p>':'')+
@@ -383,38 +383,93 @@ function setup(){
     if(el.dataset.action==='move-grade'&&el.value!==task.grade)
       commit(data=>moveTask(data,id,el.value,countActive(el.value)),'등급을 이동했습니다.');
   });
-  // Desktop HTML5 drag-and-drop; mobile pointer support is scheduled for phase 5.
-  byId('content').addEventListener('dragstart',event=>{
-    const handle=event.target.closest('.drag-handle');
-    if(!handle||hasActiveFilter(state)||state.view!=='active'){event.preventDefault();return;}
-    state.dragId=handle.dataset.id;
-    event.dataTransfer.effectAllowed='move';
-    event.dataTransfer.setData('text/plain',state.dragId);
+  // Shared drop policy for desktop HTML5 DnD and mobile Pointer Events.
+  // Drop in the upper half of a row to insert before, lower half to insert after.
+  async function dropAt(sourceId, targetElement, clientY) {
+    if (!sourceId || hasActiveFilter(state) || state.view !== 'active') return;
+    const source = state.data.items.find(item => item.id === sourceId);
+    const row = targetElement?.closest('.task-row');
+    const section = targetElement?.closest('.grade-section');
+    if (!source || !section) return;
+    const grade = section.dataset.grade;
+    const target = row ? state.data.items.find(item => item.id === row.dataset.id) : null;
+    let index = countActive(grade);
+    if (target) {
+      const bounds = row.getBoundingClientRect();
+      const after = clientY >= bounds.top + bounds.height / 2;
+      index = target.order + (after ? 1 : 0);
+    }
+    if (source.grade === grade && source.order < index) index--;
+    index = Math.max(0, index);
+    await commit(data => moveTask(data, sourceId, grade, index), '순서를 변경했습니다.');
+  }
+  const resetDrag = () => {
+    state.dragId = null;
+    pointerDrag = null;
+    document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+  };
+  let pointerDrag = null;
+  byId('content').addEventListener('dragstart', event => {
+    const handle = event.target.closest('.drag-handle');
+    if (!handle || hasActiveFilter(state) || state.view !== 'active') {
+      event.preventDefault(); return;
+    }
+    state.dragId = handle.dataset.id;
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', state.dragId);
     handle.closest('.task-row').classList.add('dragging');
   });
-  byId('content').addEventListener('dragover',event=>{
-    if(!state.dragId||hasActiveFilter(state))return;
-    const card=event.target.closest('.task-row'),section=event.target.closest('.grade-section');
-    if(card||section){event.preventDefault();event.dataTransfer.dropEffect='move';}
+  byId('content').addEventListener('dragover', event => {
+    if (!state.dragId || hasActiveFilter(state)) return;
+    if (event.target.closest('.task-row,.grade-section')) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    }
   });
-  byId('content').addEventListener('drop',async event=>{
-    const source=state.data.items.find(t=>t.id===state.dragId);
-    const card=event.target.closest('.task-row'),section=event.target.closest('.grade-section');
-    if(!source||!section||hasActiveFilter(state))return;
+  byId('content').addEventListener('drop', async event => {
+    const id = state.dragId;
     event.preventDefault();
-    const targetGrade=section.dataset.grade;
-    const target=card?state.data.items.find(t=>t.id===card.dataset.id):null;
-    const targetLength=countActive(targetGrade);
-    let index=target?.order??(targetLength-(source.grade===targetGrade?1:0));
-    if(target&&source.grade===targetGrade&&source.order<target.order)index--;
-    index=Math.max(0,index);
-    state.dragId=null;
-    try{await commit(data=>moveTask(data,source.id,targetGrade,index),'순서를 변경했습니다.');}
-    catch(error){toast(error.message,true);}
+    resetDrag();
+    try { await dropAt(id, event.target, event.clientY); }
+    catch (error) { toast(error.message, true); }
   });
-  document.addEventListener('dragend',()=>{
-    state.dragId=null;
-    document.querySelectorAll('.dragging').forEach(el=>el.classList.remove('dragging'));
+  document.addEventListener('dragend', resetDrag);
+  // Pointer capture keeps delivery on the drag handle; elementFromPoint resolves
+  // the actual drop target. A pointercancel discards the entire pending operation.
+  byId('content').addEventListener('pointerdown', event => {
+    if (event.pointerType === 'mouse' || event.button !== 0 ||
+        state.view !== 'active' || hasActiveFilter(state)) return;
+    const handle = event.target.closest('.drag-handle');
+    if (!handle) return;
+    pointerDrag = { pointerId:event.pointerId, id:handle.dataset.id };
+    handle.setPointerCapture(event.pointerId);
+    handle.closest('.task-row').classList.add('dragging');
+    event.preventDefault();
+  });
+  byId('content').addEventListener('pointerup', async event => {
+    if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+    const id = pointerDrag.id;
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    resetDrag();
+    if (target) {
+      try { await dropAt(id, target, event.clientY); }
+      catch (error) { toast(error.message, true); }
+    }
+  });
+  byId('content').addEventListener('pointercancel', event => {
+    if (pointerDrag?.pointerId === event.pointerId) resetDrag();
+  });
+  // Keyboard alternative: focus the drag handle and press Up/Down.
+  byId('content').addEventListener('keydown', event => {
+    const handle = event.target.closest('.drag-handle');
+    if (!handle || !['ArrowUp','ArrowDown'].includes(event.key) ||
+        hasActiveFilter(state) || state.view !== 'active') return;
+    event.preventDefault();
+    const task = state.data.items.find(item => item.id === handle.dataset.id);
+    if (!task) return;
+    const index = Math.max(0, Math.min(countActive(task.grade)-1,
+      task.order + (event.key === 'ArrowUp' ? -1 : 1)));
+    commit(data => moveWithinGrade(data, task.id, index), '순서를 변경했습니다.');
   });
   window.addEventListener('storage',event=>{
     if(event.key===DEFAULT_STORAGE_KEY||event.key===null){
