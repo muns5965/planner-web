@@ -48,7 +48,7 @@ async function generate() {
     .replace(entry, '<script type="module">\n' + combined + '\n</script>');
   if (/src="\.\/src\/|href="\.\/src\//.test(result)) throw Error('Unbundled asset reference remains');
   await mkdir(resolve(root, 'dist'), {recursive:true});
-  await writeFile(resolve(root, 'dist/franklin-planner.html'), result, 'utf8');
-  console.log('Built dist/franklin-planner.html (' + Buffer.byteLength(result) + ' bytes)');
+  await writeFile(resolve(root, 'dist/planner.html'), result, 'utf8');
+  console.log('Built dist/planner.html (' + Buffer.byteLength(result) + ' bytes)');
 }
 await generate();
