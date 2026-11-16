@@ -93,11 +93,11 @@ npm test
 
 ## 5차 단일 HTML·브라우저 검증
 
-- `npm run build`: `scripts/build-single-html.js`가 6개 ES 모듈과 CSS를 독립적인 클로저로 묶어 `dist/franklin-planner.html`을 생성한다. 외부 라이브러리/서버 의존성을 포함하지 않는다.
+- `npm run build`: `scripts/build-single-html.js`가 6개 ES 모듈과 CSS를 독립적인 클로저로 묶어 `dist/planner.html`을 생성한다. 외부 라이브러리/서버 의존성을 포함하지 않는다.
 - `npm test`: 저장·업무 로직·입력 편집·HTML 구조·번들 구문을 회귀 검증한다.
 - `npm run test:browser`: Chromium/Chrome과 Node.js 내장 WebSocket/CDP로 최종 HTML을 `file://` 실행하고 업무 등록, 검색, 이월·취소, 완료·취소, 휴지통, 저장 지속성을 검증한다. 키보드 순서 및 모바일 터치·취소 시나리오를 포함한다.
 - `scripts/browser-smoke.js`는 Chrome/Chromium이 설치된 환경에서 실행해야 하며 `CHROME_BIN`으로 실행 파일을 지정할 수 있다. 브라우저 실행 실패는 통과가 아니라 실패로 보고한다.
-- CI는 빌드·데이터 시험·브라우저 시험이 모두 성공했을 때 `franklin-planner-single-html` 아티팩트를 업로드한다.
+- CI는 빌드·데이터 시험·브라우저 시험이 모두 성공했을 때 `planner-single-html` 아티팩트를 업로드한다.
 - 모바일 Pointer Events: 터치용 드래그 핸들에 `touch-action:none`; `pointercancel` 발생 시 변경 후보를 저장하지 않고 취소한다. 키보드는 드래그 핸들에 포커스 후 위/아래 화살표를 사용한다.
 - 필터 상태에서 드래그를 차단한다. 데스크톱 DnD·터치 드롭은 같은 순번 계산 정책을 사용하며 순번 변경은 단일 `update()`로 저장한다.
 
