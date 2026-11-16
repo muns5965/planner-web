@@ -113,6 +113,23 @@ try{
   await until("JSON.parse(localStorage.getItem('planner_data_v1')||'{}').items?.length===1",'create task');
   await check("document.querySelector('.task-title')?.textContent==='브라우저 시험 업무'",'new task renders');
   await check("JSON.parse(localStorage.getItem('planner_data_v1')).revision===1",'first save increments revision');
+
+  await check("document.querySelectorAll('.tag-link').length===2",'card tags render as interactive buttons');
+  await evaluate("document.querySelector('[data-action=theme-toggle]').click()");
+  await check("document.body.classList.contains('dark') && localStorage.getItem('planner_theme_v1')==='dark'",'dark mode setting persists separately');
+  await check("JSON.parse(localStorage.getItem('planner_data_v1')).revision===1",'changing theme leaves task revision unchanged');
+  await evaluate("document.querySelector('[data-action=memo]').click()");
+  await check("document.querySelector('.memo-drawer')?.textContent==='데이터 지속성'",'memo expands without editing');
+  await evaluate("document.querySelector('.tag-link').click()");
+  await check("document.querySelectorAll('#tag-filters .chip[aria-pressed=true]').length===1",'card tag selects one filter');
+  await evaluate("document.querySelector('#clear-filters').click()");
+  await evaluate("document.querySelector('.task-title').click()");
+  await check("document.querySelectorAll('#tag-editor-chips .editor-chip').length===2",'editor chips reflect saved tags');
+  await evaluate("document.querySelector('#tag-editor-chips [data-remove-tag=\"0\"]').click()");
+  await check("document.querySelector('#task-tags').value==='테스트'",'chip removes only selected tag from draft');
+  await evaluate("document.querySelector('#editor-cancel').click()");
+  await check("JSON.parse(localStorage.getItem('planner_data_v1')).items[0].tags.length===2",'canceling chip change leaves stored data untouched');
+
   await evaluate("document.querySelector('#search').value='일치하지 않는 검색'");
   await evaluate("document.querySelector('#search').dispatchEvent(new Event('input',{bubbles:true}))");
   await check("!!document.querySelector('.empty-state')",'search filters results');
@@ -164,6 +181,7 @@ try{
     width:390,height:844,deviceScaleFactor:1,mobile:true
   });
   await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+  await check("getComputedStyle(document.querySelector('.mobile-dock')).display==='flex'",'mobile dock visible at 390px');
   await evaluate("document.querySelectorAll('.drag-handle')[1].scrollIntoView({block:'center'})");
   await sleep(100);
   const coordinates=await evaluate("(()=>{const rows=[...document.querySelectorAll('.task-row')];const ordered=rows.sort((a,b)=>Number(a.querySelector('.rank').textContent.slice(1))-Number(b.querySelector('.rank').textContent.slice(1)));const handle=ordered[1].querySelector('.drag-handle').getBoundingClientRect();const target=ordered[0].getBoundingClientRect();return {from:{x:handle.x+handle.width/2,y:handle.y+handle.height/2},to:{x:target.x+30,y:target.y+target.height/4}}})()");
