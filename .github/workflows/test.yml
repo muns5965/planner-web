@@ -1,4 +1,4 @@
-name: Node.js tests
+name: Build and tests
 
 on:
   push:
@@ -13,7 +13,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Syntax-check browser entry and dev server
+      - name: Check JavaScript syntax
         run: npm run check
-      - name: Run all automated tests
+      - name: Build standalone HTML
+        run: npm run build
+      - name: Run data and bundle tests
         run: npm test
+      - name: Chromium version
+        run: |
+          command -v chromium || command -v google-chrome || command -v google-chrome-stable
+      - name: Browser smoke test (file HTML)
+        run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: franklin-planner-single-html
+          path: dist/franklin-planner.html
+          if-no-files-found: error
