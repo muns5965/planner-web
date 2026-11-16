@@ -47,3 +47,18 @@ test('local preview server serves HTML and ES modules with correct content types
  const forbidden=await fetch('http://127.0.0.1:'+port+'/package.json');
  assert.equal(forbidden.status,200);
 });
+
+
+test('visual shell keeps accessible mobile navigation and live grade help',async()=>{
+ const [html,ui,css]=await Promise.all([read('index.html'),read('src/ui.js'),read('src/styles.css')]);
+ for(const id of ['mobile-more','grade-hint','task-grade'])
+   assert.ok(html.includes('id="'+id+'"'),'missing UI element '+id);
+ assert.match(html,/aria-describedby="grade-hint"/);
+ assert.match(html,/class="mobile-dock"/);
+ assert.match(html,/class="mobile-fab" data-action="new"/);
+ assert.match(ui,/function updateGradeHint\(/);
+ assert.match(ui,/addEventListener\('change',updateGradeHint\)/);
+ assert.match(ui,/\.mobile-dock-item\[data-view\]/);
+ assert.match(css,/env\(safe-area-inset-bottom\)/);
+ assert.match(css,/\.mobile-dock-pill/);
+});
