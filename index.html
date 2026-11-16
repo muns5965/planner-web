@@ -17,10 +17,11 @@
       <button class="side-link" data-view="completed"><span>✓</span> 완료한 업무</button>
       <button class="side-link" data-view="trash"><span>▤</span> 휴지통</button>
     </div>
-    <div class="side-group"><span class="side-label">BACKUP & DATA</span>
+    <div class="side-group"><span class="side-label">데이터 및 테마</span>
       <button class="side-link" data-action="export"><span>⇩</span> JSON 내보내기</button>
       <button class="side-link" data-action="import"><span>⇧</span> JSON 가져오기</button>
       <button class="side-link" data-action="copy-raw"><span>▣</span> 저장 원본 복사</button>
+      <button class="side-link" id="theme-toggle" data-action="theme-toggle" aria-pressed="false"><span>◐</span> <span id="theme-label">다크 모드</span></button>
       <input type="file" id="import-file" accept=".json,application/json" hidden>
     </div>
     <div class="side-foot"><span class="status-dot"></span> <span id="storage-status">저장소 확인 중</span><p>이 브라우저의 로컬 저장소에 저장됩니다. 정기적으로 JSON 백업을 보관하십시오.</p></div>
@@ -41,6 +42,7 @@
       <div><span class="eyebrow" id="today-label"></span><h1 id="page-title">업무 플래너</h1><p id="page-subtitle">중요한 업무를 우선순위에 맞춰 정리합니다.</p></div>
       <div class="page-actions"><button class="btn subtle" id="completion-mode" data-action="toggle-completion" aria-pressed="false">완료 모드 OFF</button><button class="btn subtle" id="rollover-btn" data-action="rollover">내일로 이월</button><button class="btn primary" id="new-task" data-action="new">+ 업무 추가</button></div>
     </section>
+    <section id="mode-status" class="mode-status" role="status" hidden>✓ 완료 모드가 켜졌습니다. 업무별 완료 체크가 표시됩니다.</section>
     <section id="summary" class="summary" aria-label="업무 현황"></section>
     <section class="toolbar" aria-label="검색과 필터">
       <label class="search-field"><span aria-hidden="true">⌕</span><span class="sr-only">업무 검색</span><input type="search" id="search" placeholder="제목·내용·태그 검색" autocomplete="off"></label>
@@ -69,7 +71,7 @@
         <label>업무 제목 <span class="required">*</span><input id="task-title" name="title" required maxlength="200" placeholder="해야 할 업무를 입력하세요"></label>
         <label>주요 내용<textarea name="body" id="task-body" maxlength="20000" rows="5" placeholder="진행 내용, 참고 사항"></textarea></label>
         <div class="two-col"><label>우선순위<select name="grade" id="task-grade" aria-describedby="grade-hint"><option value="A">A · 매우 중요</option><option value="B">B · 중요</option><option value="C">C · 사소</option></select><small id="grade-hint" class="grade-hint">A · 매우 중요 — 핵심 목표와 최우선 과제</small></label><label>실행 예정일<input name="scheduledDate" id="task-scheduled" type="date"></label></div>
-        <div class="two-col"><label>처리기한<input name="dueDate" id="task-due" type="date"></label><label>태그 <small>쉼표로 구분</small><input name="tags" id="task-tags" placeholder="보고, 검토"></label></div>
+        <div class="two-col"><label>처리기한<input name="dueDate" id="task-due" type="date"></label><label class="editor-tags-field">태그 <small>쉼표 또는 Enter로 추가</small><input name="tags" id="task-tags" list="tag-suggestions" autocomplete="off" placeholder="보고, 검토"><datalist id="tag-suggestions"></datalist><span class="tag-editor-chips" id="tag-editor-chips" aria-label="입력한 태그"></span></label></div>
         <p id="form-error" role="alert" class="form-error" hidden></p>
         <div class="dialog-actions"><button type="button" id="editor-cancel" class="btn subtle">취소</button><button class="btn primary" type="submit">저장</button></div>
       </form>
