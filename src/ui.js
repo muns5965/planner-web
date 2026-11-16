@@ -58,6 +58,9 @@ function localDate(date=new Date()){
   return [String(date.getFullYear()).padStart(4,'0'),
     String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
 }
+function koreanDisplayDate(date=new Date()){
+  return new Intl.DateTimeFormat('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'}).format(date);
+}
 function nextLocalDate(){
   const d=new Date();d.setDate(d.getDate()+1);return localDate(d);
 }
@@ -123,9 +126,11 @@ function renderSummary(){
 }
 function renderTags(){
   const tags=getTagOptions(state.data);
-  byId('tag-filters').innerHTML=tags.length ? tags.map(({key,label})=>
+  const mode='<button class="chip logic-chip" type="button" data-action="cycle-tag-mode" aria-label="태그 필터 조합 방식 변경">태그 '+state.tagMode+'</button>';
+  const clear=hasActiveFilter(state)?'<button class="chip reset-chip" type="button" data-action="clear-filters">↺ 전체 해제</button>':'';
+  byId('tag-filters').innerHTML=mode+clear+tags.map(({key,label})=>
     '<button class="chip" type="button" data-action="tag" data-key="'+escapeHtml(key)+
-    '" aria-pressed="'+String(state.selectedTags.includes(key))+'">#'+escapeHtml(label)+'</button>').join(''):'';
+    '" aria-pressed="'+String(state.selectedTags.includes(key))+'">#'+escapeHtml(label)+'</button>').join('');
   byId('clear-filters').hidden=!hasActiveFilter(state);
 }
 function renderTask(task){
@@ -197,7 +202,7 @@ function render(){
   const [title,subtitle]=titles[state.view];
   byId('view-heading').textContent=title;
   byId('page-title').textContent=title;byId('page-subtitle').textContent=subtitle;
-  byId('today-label').textContent=localDate()+' · MY TASKS';
+  byId('today-label').textContent=koreanDisplayDate();
   byId('revision-label').textContent='revision '+state.data.revision;
   byId('storage-status').textContent=normal?'로컬 저장소 연결':'저장 차단 상태';
   byId('readonly-banner').hidden=normal;
@@ -374,6 +379,10 @@ async function clickAction(action,id,element){
       return commit(data=>emptyTrash(data,true),'휴지통을 비웠습니다.');return;
     case 'clear-completed':if(window.confirm('완료한 업무를 모두 휴지통으로 이동하시겠습니까?'))
       return commit(data=>softDeleteCompleted(data,now).data,'완료 업무를 휴지통으로 이동했습니다.');return;
+    case 'cycle-tag-mode':
+      state.tagMode=state.tagMode==='AND'?'OR':'AND';
+      byId('tag-mode').value=state.tagMode;
+      render();return;
     case 'tag-only':{
       state.view='active';state.grade=null;state.search='';state.selectedTags=[element.dataset.key];
       byId('search').value='';byId('filter-grade').value='';render();return;
