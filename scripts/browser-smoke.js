@@ -150,6 +150,15 @@ try{
   await send('Input.dispatchKeyEvent',{type:'keyUp',key:'ArrowUp',code:'ArrowUp',windowsVirtualKeyCode:38});
   await until("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).items.find(x=>x.title==='정렬 검증 업무').order===0",'keyboard reorder');
   console.log('PASS keyboard Up reorders focused handle');
+  await evaluate("document.querySelectorAll('.drag-handle')[0].focus()");
+  const beforeDown=await evaluate("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision");
+  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'ArrowDown',code:'ArrowDown',windowsVirtualKeyCode:40});
+  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'ArrowDown',code:'ArrowDown',windowsVirtualKeyCode:40});
+  await until("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).items.find(x=>x.title==='정렬 검증 업무').order===1",'keyboard ArrowDown');
+  await check("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision==="+(beforeDown+1),
+    'ArrowDown commits exactly once');
+  console.log('PASS keyboard Down reorders focused handle');
+
 
   await send('Emulation.setDeviceMetricsOverride',{
     width:390,height:844,deviceScaleFactor:1,mobile:true
