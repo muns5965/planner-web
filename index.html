@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Franklin Planner</title>
+<link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+<div class="shell" id="app">
+  <aside class="sidebar" aria-label="플래너 메뉴">
+    <div class="brand"><span class="brand-mark">F</span><div><strong>Franklin</strong><small>PLANNER</small></div></div>
+    <div class="side-group">
+      <span class="side-label">WORKSPACE</span>
+      <button class="side-link active" data-view="active"><span>▦</span> 업무 플래너</button>
+      <button class="side-link" data-view="completed"><span>✓</span> 완료한 업무</button>
+      <button class="side-link" data-view="trash"><span>▤</span> 휴지통</button>
+    </div>
+    <div class="side-group"><span class="side-label">BACKUP & DATA</span>
+      <button class="side-link" data-action="export"><span>⇩</span> JSON 내보내기</button>
+      <button class="side-link" data-action="import"><span>⇧</span> JSON 가져오기</button>
+      <button class="side-link" data-action="copy-raw"><span>▣</span> 저장 원본 복사</button>
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
+    </div>
+    <div class="side-foot"><span class="status-dot"></span> <span id="storage-status">저장소 확인 중</span><p>이 브라우저의 로컬 저장소에 저장됩니다. 정기적으로 JSON 백업을 보관하십시오.</p></div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <button id="menu-toggle" class="icon-btn mobile-only" aria-label="메뉴 토글">☰</button>
+      <div class="breadcrumb">WORKSPACE <span>/</span> <strong id="view-heading">업무 플래너</strong></div>
+      <div class="header-actions"><span id="revision-label" class="revision">revision —</span><button id="refresh" class="icon-btn" title="저장소 다시 읽기" aria-label="새로고침">↻</button></div>
+    </header>
+    <section id="readonly-banner" class="notice danger" hidden role="alert">
+      <strong id="readonly-title">저장소 오류</strong>
+      <p id="readonly-details"></p>
+      <div class="notice-actions"><button data-action="export">원본 내보내기</button><button data-action="copy-raw">원본 복사</button>
+      <button data-action="recovery-file">백업 복구</button><button data-action="reset" class="danger-btn">저장 데이터 초기화</button></div>
+    </section>
+    <section class="page-heading">
+      <div><span class="eyebrow" id="today-label"></span><h1 id="page-title">업무 플래너</h1><p id="page-subtitle">중요한 업무를 우선순위에 맞춰 정리합니다.</p></div>
+      <div class="page-actions"><button class="btn subtle" id="rollover-btn" data-action="rollover">내일로 이월</button><button class="btn primary" id="new-task" data-action="new">+ 업무 추가</button></div>
+    </section>
+    <section id="summary" class="summary" aria-label="업무 현황"></section>
+    <section class="toolbar" aria-label="검색과 필터">
+      <label class="search-field"><span aria-hidden="true">⌕</span><span class="sr-only">업무 검색</span><input type="search" id="search" placeholder="제목·내용·태그 검색" autocomplete="off"></label>
+      <label class="select-label"><span class="sr-only">등급</span><select id="filter-grade"><option value="">전체 등급</option><option value="A">A · 매우 중요</option><option value="B">B · 중요</option><option value="C">C · 사소</option></select></label>
+      <label class="select-label"><span class="sr-only">태그 결합 방식</span><select id="tag-mode"><option value="AND">태그 모두 포함</option><option value="OR">태그 하나 이상</option></select></label>
+      <button class="btn subtle" id="clear-filters" data-action="clear-filters" hidden>필터 해제</button>
+    </section>
+    <section id="tag-filters" class="tag-row" aria-label="태그 필터"></section>
+    <section id="content" class="content-area" aria-live="polite"></section>
+    <section class="footer-actions" id="footer-actions"></section>
+  </main>
+  <div class="editor-backdrop" id="editor-backdrop" hidden>
+    <section class="editor" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+      <header class="editor-header"><div><span class="eyebrow">TASK EDITOR</span><h2 id="editor-title">업무 추가</h2></div><button type="button" id="editor-close" class="icon-btn" aria-label="닫기">×</button></header>
+      <form id="task-form">
+        <input type="hidden" name="taskId" id="task-id">
+        <label>업무 제목 <span class="required">*</span><input id="task-title" name="title" required maxlength="200" placeholder="해야 할 업무를 입력하세요"></label>
+        <label>주요 내용<textarea name="body" id="task-body" maxlength="20000" rows="5" placeholder="진행 내용, 참고 사항"></textarea></label>
+        <div class="two-col"><label>우선순위<select name="grade" id="task-grade"><option value="A">A · 매우 중요</option><option value="B">B · 중요</option><option value="C">C · 사소</option></select></label><label>실행 예정일<input name="scheduledDate" id="task-scheduled" type="date"></label></div>
+        <div class="two-col"><label>처리기한<input name="dueDate" id="task-due" type="date"></label><label>태그 <small>쉼표로 구분</small><input name="tags" id="task-tags" placeholder="보고, 검토"></label></div>
+        <p id="form-error" role="alert" class="form-error" hidden></p>
+        <div class="dialog-actions"><button type="button" id="editor-cancel" class="btn subtle">취소</button><button class="btn primary" type="submit">저장</button></div>
+      </form>
+    </section>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</div>
+<script type="module" src="./src/ui.js"></script>
+</body>
+</html>
