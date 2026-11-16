@@ -123,6 +123,36 @@ try{
   await check("document.querySelector('[data-action=restore]')!==null",'trash view');
   await evaluate("document.querySelector('[data-action=restore]').click()");
   await until("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).items[0].deletedAt===null",'restore');
+  // Keyboard ordering and mobile touch interaction on actual DOM input events.
+  await evaluate("document.querySelector('[data-view=active]').click()");
+  await evaluate("document.querySelector('[data-action=new]').click()");
+  await evaluate("document.querySelector('#task-title').value='정렬 검증 업무'");
+  await evaluate("document.querySelector('#task-form').requestSubmit()");
+  await until("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).items.length===2",'second task');
+  await check("document.querySelectorAll('.drag-handle').length===2",'two reorder handles');
+  await evaluate("document.querySelectorAll('.drag-handle')[1].focus()");
+  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'ArrowUp',code:'ArrowUp',windowsVirtualKeyCode:38});
+  await send('Input.dispatchKeyEvent',{type:'keyUp',key:'ArrowUp',code:'ArrowUp',windowsVirtualKeyCode:38});
+  await until("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).items.find(x=>x.title==='정렬 검증 업무').order===0",'keyboard reorder');
+  console.log('PASS keyboard Up reorders focused handle');
+
+  await send('Emulation.setDeviceMetricsOverride',{
+    width:390,height:844,deviceScaleFactor:1,mobile:true
+  });
+  await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+  await evaluate("window.scrollTo(0,0)");
+  const coordinates=await evaluate("(()=>{const rows=[...document.querySelectorAll('.task-row')];const ordered=rows.sort((a,b)=>Number(a.querySelector('.rank').textContent.slice(1))-Number(b.querySelector('.rank').textContent.slice(1)));const handle=ordered[1].querySelector('.drag-handle').getBoundingClientRect();const target=ordered[0].getBoundingClientRect();return {from:{x:handle.x+handle.width/2,y:handle.y+handle.height/2},to:{x:target.x+30,y:target.y+target.height/4}}})()");
+  const storedRevision=await evaluate("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision");
+  await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...coordinates.from,id:1}]});
+  await send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+  await sleep(200);
+  await check("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision==="+storedRevision,'pointercancel keeps revision unchanged');
+  await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...coordinates.from,id:2}]});
+  await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...coordinates.to,id:2}]});
+  await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await until("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision==="+(storedRevision+1),'touch reorder saved');
+  console.log('PASS mobile touch moves task order and commits once');
+
   const revision=await evaluate("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision");
   await send('Page.reload',{ignoreCache:true});
   await until("document.readyState==='complete' && document.querySelector('.task-title')?.textContent==='브라우저 시험 업무'",'reload');
