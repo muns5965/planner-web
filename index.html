@@ -13,24 +13,24 @@
     <div class="brand"><span class="brand-mark">P</span><div><strong>플래너</strong><small>MY TASKS</small></div></div>
     <div class="side-group">
       <span class="side-label">WORKSPACE</span>
-      <button class="side-link active" data-view="active"><span>▦</span> 업무 플래너</button>
-      <button class="side-link" data-view="completed"><span>✓</span> 완료한 업무</button>
-      <button class="side-link" data-view="trash"><span>▤</span> 휴지통</button>
+      <button class="side-link active" data-view="active"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> 업무 플래너</button>
+      <button class="side-link" data-view="completed"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg> 완료한 업무</button>
+      <button class="side-link" data-view="trash"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg> 휴지통</button>
     </div>
     <div class="side-group"><span class="side-label">데이터 및 테마</span>
-      <button class="side-link" data-action="export"><span>⇩</span> JSON 내보내기</button>
-      <button class="side-link" data-action="import"><span>⇧</span> JSON 가져오기</button>
-      <button class="side-link" data-action="copy-raw"><span>▣</span> 저장 원본 복사</button>
-      <button class="side-link" id="theme-toggle" data-action="theme-toggle" aria-pressed="false"><span>◐</span> <span id="theme-label">다크 모드</span></button>
+      <button class="side-link" data-action="export"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12m-5-5 5 5 5-5"/><path d="M4 17v4h16v-4"/></svg> JSON 내보내기</button>
+      <button class="side-link" data-action="import"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 17v4h16v-4"/></svg> JSON 가져오기</button>
+      <button class="side-link" data-action="copy-raw"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg> 저장 원본 복사</button>
+      <button class="side-link" id="theme-toggle" data-action="theme-toggle" aria-pressed="false"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 14a8 8 0 0 1-10-10A8 8 0 1 0 20 14Z"/></svg> <span id="theme-label">다크 모드</span></button>
       <input type="file" id="import-file" accept=".json,application/json" hidden>
     </div>
     <div class="side-foot"><span class="status-dot"></span> <span id="storage-status">저장소 확인 중</span><p>이 브라우저의 로컬 저장소에 저장됩니다. 정기적으로 JSON 백업을 보관하십시오.</p></div>
   </aside>
   <main class="main">
     <header class="topbar">
-      <button id="menu-toggle" class="icon-btn mobile-only" aria-label="메뉴 토글">☰</button>
+      <button id="menu-toggle" class="icon-btn mobile-only" aria-label="메뉴 토글"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
       <div class="breadcrumb">WORKSPACE <span>/</span> <strong id="view-heading">업무 플래너</strong></div>
-      <div class="header-actions"><span id="revision-label" class="revision">revision —</span><button id="refresh" class="icon-btn" title="저장소 다시 읽기" aria-label="새로고침">↻</button></div>
+      <div class="header-actions"><span id="revision-label" class="revision">revision —</span><button id="refresh" class="icon-btn" title="저장소 다시 읽기" aria-label="새로고침"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M5 9a8 8 0 0 1 14-2l1 5M4 12l1 5a8 8 0 0 0 14-2"/></svg></button></div>
     </header>
     <section id="readonly-banner" class="notice danger" hidden role="alert">
       <strong id="readonly-title">저장소 오류</strong>
@@ -45,7 +45,7 @@
     <section id="mode-status" class="mode-status" role="status" hidden>✓ 완료 모드가 켜졌습니다. 업무별 완료 체크가 표시됩니다.</section>
     <section id="summary" class="summary" aria-label="업무 현황"></section>
     <section class="toolbar" aria-label="검색과 필터">
-      <label class="search-field"><span aria-hidden="true">⌕</span><span class="sr-only">업무 검색</span><input type="search" id="search" placeholder="제목·내용·태그 검색" autocomplete="off"></label>
+      <label class="search-field"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><span class="sr-only">업무 검색</span><input type="search" id="search" placeholder="제목·내용·태그 검색" autocomplete="off"></label>
       <label class="select-label"><span class="sr-only">등급</span><select id="filter-grade"><option value="">전체 등급</option><option value="A">A · 매우 중요</option><option value="B">B · 중요</option><option value="C">C · 사소</option></select></label>
       <label class="select-label"><span class="sr-only">태그 결합 방식</span><select id="tag-mode"><option value="AND">태그 모두 포함</option><option value="OR">태그 하나 이상</option></select></label>
       <button class="btn subtle" id="clear-filters" data-action="clear-filters" hidden>필터 해제</button>
@@ -56,10 +56,10 @@
   </main>
   <nav class="mobile-dock" aria-label="모바일 화면 이동">
     <div class="mobile-dock-pill">
-      <button type="button" data-view="active" class="mobile-dock-item active" aria-current="page"><span aria-hidden="true">▦</span><small>업무</small></button>
-      <button type="button" data-view="completed" class="mobile-dock-item"><span aria-hidden="true">✓</span><small>완료</small></button>
-      <button type="button" data-view="trash" class="mobile-dock-item"><span aria-hidden="true">▤</span><small>휴지통</small></button>
-      <button type="button" id="mobile-more" class="mobile-dock-item"><span aria-hidden="true">☰</span><small>메뉴</small></button>
+      <button type="button" data-view="active" class="mobile-dock-item active" aria-current="page"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><small>업무</small></button>
+      <button type="button" data-view="completed" class="mobile-dock-item"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 6 9 17l-5-5"/></svg><small>완료</small></button>
+      <button type="button" data-view="trash" class="mobile-dock-item"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg><small>휴지통</small></button>
+      <button type="button" id="mobile-more" class="mobile-dock-item"><svg class="inline-icon nav-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg><small>메뉴</small></button>
     </div>
     <button type="button" class="mobile-fab" data-action="new" aria-label="새 업무 추가">+</button>
   </nav>
