@@ -5,7 +5,7 @@ import { completeTask, reopenTask, moveTask, moveWithinGrade,
 import { getDateFlags, previewRollover, createRolloverSession, softDeleteTask,
   restoreTrashTask, softDeleteCompleted, permanentlyDeleteTask, emptyTrash,
   listTrash, cleanupCandidates } from './dates-trash.js';
-import { validateData } from './validator.js';
+import { validateData, normalizeTagKey } from './validator.js';
 
 const byId = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c =>
@@ -16,7 +16,8 @@ const grades = [{grade:'A',label:'매우 중요',sub:'핵심 목표와 최우선
 const EMPTY={schemaVersion:1,revision:0,items:[]};
 const goodStatus = new Set(['missing','empty','ok']);
 const state = {data:EMPTY,status:'missing',view:'active',completionMode:false,search:'',
-  grade:null,selectedTags:[],tagMode:'AND',externalDirty:false,busy:false,dragId:null};
+  grade:null,selectedTags:[],tagMode:'AND',externalDirty:false,busy:false,dragId:null,
+  expandedMemo:new Set(),dark:false};
 let adapter;
 try {
   const store=window.localStorage;
@@ -27,6 +28,22 @@ try {
   adapter=createStorageAdapter({getItem(){throw new DOMException('blocked','SecurityError');}});
 }
 const rollover=createRolloverSession(adapter);
+const THEME_KEY='planner_theme_v1';
+try {
+  const saved=window.localStorage.getItem(THEME_KEY);
+  state.dark=saved==='dark'||(saved===null&&window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+} catch { state.dark=window.matchMedia?.('(prefers-color-scheme: dark)').matches??false; }
+function renderTheme(){
+  document.body.classList.toggle('dark',state.dark);
+  byId('theme-label').textContent=state.dark?'라이트 모드로 전환':'다크 모드로 전환';
+  byId('theme-toggle').setAttribute('aria-pressed',String(state.dark));
+}
+function toggleTheme(){
+  state.dark=!state.dark;
+  try {window.localStorage.setItem(THEME_KEY,state.dark?'dark':'light');} catch {}
+  renderTheme();
+}
+
 
 function localDate(date=new Date()){
   return [String(date.getFullYear()).padStart(4,'0'),
@@ -111,7 +128,7 @@ function renderTask(task){
   if(task.scheduledDate)meta.push('<span class="'+(flags.today?'today-date':'')+'">예정 '+escapeHtml(task.scheduledDate)+'</span>');
   if(task.dueDate)meta.push('<span class="'+(flags.overdue?'due-over':'')+'">기한 '+escapeHtml(task.dueDate)+'</span>');
   if(isComplete)meta.push('<span>완료일 '+escapeHtml(task.completedDate??'미기록')+'</span>');
-  for(const tag of task.tags)meta.push('<span class="tag">#'+escapeHtml(tag)+'</span>');
+  for(const tag of task.tags)meta.push('<button type="button" class="tag tag-link" data-action="tag-only" data-key="'+escapeHtml(normalizeTagKey(tag))+'" aria-label="'+escapeHtml(tag)+' 태그로 업무 조회">#'+escapeHtml(tag)+'</button>');
   let buttons='';
   if(state.view==='trash'){
     buttons='<button type="button" data-action="restore" data-id="'+id+'">복원</button>'+
@@ -134,8 +151,10 @@ function renderTask(task){
   const drag=movable?'<span class="drag-handle" draggable="true" tabindex="0" role="button" aria-label="끌어서 순서 변경. 키보드 위아래 화살표로 이동" data-id="'+id+'" title="끌어서 순서 변경">⋮⋮</span>':'';
   return '<article class="task-row" data-id="'+id+'" data-grade="'+escapeHtml(task.grade)+'">'+
     '<span class="rank">'+rank+'</span><div class="task-content"><button class="task-title" type="button" data-action="edit" data-id="'+id+'">'+escapeHtml(task.title)+'</button>'+
-    (task.body?'<p class="task-body">'+escapeHtml(task.body)+'</p>':'')+
-    '<div class="task-meta">'+meta.join('')+'</div></div><div class="task-actions">'+drag+buttons+'</div></article>';
+    (task.body?'<button type="button" class="memo-toggle" data-action="memo" data-id="'+id+'" aria-expanded="'+String(state.expandedMemo.has(task.id))+'">≡ 메모 '+(state.expandedMemo.has(task.id)?'접기':'보기')+'</button>':'')+
+    '<div class="task-meta">'+meta.join('')+'</div>'+
+    (task.body&&state.expandedMemo.has(task.id)?'<div class="memo-drawer">'+escapeHtml(task.body)+'</div>':'')+
+    '</div><div class="task-actions">'+drag+buttons+'</div></article>';
 }
 function renderActive(){
   const completed=state.view==='completed';
@@ -189,6 +208,7 @@ function render(){
   byId('completion-mode').disabled=!normal;
   byId('completion-mode').textContent='완료 모드 '+(state.completionMode?'ON':'OFF');
   byId('completion-mode').setAttribute('aria-pressed',String(state.completionMode));
+  byId('mode-status').hidden=!state.completionMode||state.view!=='active';
   document.querySelectorAll('.side-link[data-view],.mobile-dock-item[data-view]').forEach(button=>{
     const active=button.dataset.view===state.view;
     button.classList.toggle('active',active);
@@ -232,6 +252,18 @@ function updateGradeHint(){
   byId('grade-hint').textContent=description;
   byId('task-grade').title=description;
 }
+function updateTagEditor(){
+  const input=byId('task-tags');
+  const seen=new Set();
+  const tags=input.value.split(',').map(v=>v.trim()).filter(Boolean).filter(v=>{
+    const key=normalizeTagKey(v);
+    if(seen.has(key))return false;
+    seen.add(key);return true;
+  });
+  byId('tag-editor-chips').innerHTML=tags.map((tag,index)=>
+    '<span class="editor-chip">#'+escapeHtml(tag)+
+    '<button type="button" data-remove-tag="'+index+'" aria-label="'+escapeHtml(tag)+' 태그 제거">×</button></span>').join('');
+}
 function openEditor(task=null){
   if(!canWrite())return;
   byId('task-id').value=task?.id??'';
@@ -243,6 +275,8 @@ function openEditor(task=null){
   byId('task-scheduled').value=task?.scheduledDate??'';
   byId('task-due').value=task?.dueDate??'';
   byId('task-tags').value=task?.tags.join(', ')??'';
+  updateTagEditor();
+  byId('tag-suggestions').innerHTML=getTagOptions(state.data).map(({label})=>'<option value="'+escapeHtml(label)+'"></option>').join('');
   byId('form-error').hidden=true;
   byId('editor-backdrop').hidden=false;
   byId('task-title').focus();
@@ -315,6 +349,8 @@ async function clickAction(action,id,element){
   const now=new Date().toISOString(),task=state.data.items.find(t=>t.id===id);
   switch(action){
     case 'new':return openEditor();
+    case 'theme-toggle':return toggleTheme();
+    case 'memo':state.expandedMemo.has(id)?state.expandedMemo.delete(id):state.expandedMemo.add(id);render();return;
     case 'edit':return task && openEditor(task);
     case 'complete':return commit(data=>completeTask(data,id,localDate(),now),'완료 처리했습니다.');
     case 'reopen':return commit(data=>reopenTask(data,id,now),'완료를 취소했습니다.');
@@ -329,6 +365,10 @@ async function clickAction(action,id,element){
       return commit(data=>emptyTrash(data,true),'휴지통을 비웠습니다.');return;
     case 'clear-completed':if(window.confirm('완료한 업무를 모두 휴지통으로 이동하시겠습니까?'))
       return commit(data=>softDeleteCompleted(data,now).data,'완료 업무를 휴지통으로 이동했습니다.');return;
+    case 'tag-only':{
+      state.view='active';state.grade=null;state.search='';state.selectedTags=[element.dataset.key];
+      byId('search').value='';byId('filter-grade').value='';render();return;
+    }
     case 'tag':{
       const key=element.dataset.key;
       state.selectedTags=state.selectedTags.includes(key)?state.selectedTags.filter(k=>k!==key):[...state.selectedTags,key];
@@ -347,6 +387,7 @@ async function clickAction(action,id,element){
   }
 }
 function setup(){
+  renderTheme();
   readCurrent();
   document.addEventListener('click',async event=>{
     const viewButton=event.target.closest('[data-view]');
@@ -361,6 +402,29 @@ function setup(){
     catch(err){toast(err.message,true);}
   });
   byId('task-form').addEventListener('submit',saveForm);
+  byId('task-tags').addEventListener('input',updateTagEditor);
+  byId('task-tags').addEventListener('keydown',event=>{
+    if(event.key==='Enter'&&!event.isComposing&&event.keyCode!==229){
+      event.preventDefault();
+      const input=event.currentTarget;
+      if(input.value.trim()&&!input.value.endsWith(','))input.value=input.value.trim()+', ';
+      updateTagEditor();
+    }
+  });
+  byId('tag-editor-chips').addEventListener('click',event=>{
+    const button=event.target.closest('[data-remove-tag]');
+    if(!button)return;
+    const input=byId('task-tags');
+    const tags=input.value.split(',').map(v=>v.trim()).filter(Boolean);
+    const seen=new Set();
+    const unique=tags.filter(tag=>{
+      const key=normalizeTagKey(tag);
+      if(seen.has(key))return false;seen.add(key);return true;
+    });
+    unique.splice(Number(button.dataset.removeTag),1);
+    input.value=unique.join(', ');
+    updateTagEditor();input.focus();
+  });
   byId('task-grade').addEventListener('change',updateGradeHint);
   byId('mobile-more').addEventListener('click',()=>document.querySelector('.sidebar').classList.toggle('open'));
   byId('editor-close').addEventListener('click',closeEditor);
