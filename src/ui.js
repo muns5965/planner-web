@@ -189,8 +189,15 @@ function render(){
   byId('completion-mode').disabled=!normal;
   byId('completion-mode').textContent='완료 모드 '+(state.completionMode?'ON':'OFF');
   byId('completion-mode').setAttribute('aria-pressed',String(state.completionMode));
-  document.querySelectorAll('.side-link[data-view]').forEach(button=>
-    button.classList.toggle('active',button.dataset.view===state.view));
+  document.querySelectorAll('.side-link[data-view],.mobile-dock-item[data-view]').forEach(button=>{
+    const active=button.dataset.view===state.view;
+    button.classList.toggle('active',active);
+    if(button.classList.contains('mobile-dock-item')){
+      if(active)button.setAttribute('aria-current','page');
+      else button.removeAttribute('aria-current');
+    }
+  });
+  document.querySelector('.mobile-fab').disabled=!normal||state.view!=='active';
   document.querySelector('.toolbar').hidden=state.view==='trash'||!normal;
   byId('tag-filters').hidden=state.view==='trash'||!normal;
   byId('summary').hidden=!normal;
@@ -219,6 +226,12 @@ async function copyRaw(){
   try{await navigator.clipboard.writeText(raw.raw??'');toast('원본 텍스트를 클립보드에 복사했습니다.');}
   catch{toast('클립보드 복사에 실패했습니다. 다운로드를 사용하십시오.',true);}
 }
+function updateGradeHint(){
+  const selected=grades.find(g=>g.grade===byId('task-grade').value)??grades[0];
+  const description=selected.grade+' · '+selected.label+' — '+selected.sub;
+  byId('grade-hint').textContent=description;
+  byId('task-grade').title=description;
+}
 function openEditor(task=null){
   if(!canWrite())return;
   byId('task-id').value=task?.id??'';
@@ -226,6 +239,7 @@ function openEditor(task=null){
   byId('task-title').value=task?.title??'';
   byId('task-body').value=task?.body??'';
   byId('task-grade').value=task?.grade??'A';
+  updateGradeHint();
   byId('task-scheduled').value=task?.scheduledDate??'';
   byId('task-due').value=task?.dueDate??'';
   byId('task-tags').value=task?.tags.join(', ')??'';
@@ -347,6 +361,8 @@ function setup(){
     catch(err){toast(err.message,true);}
   });
   byId('task-form').addEventListener('submit',saveForm);
+  byId('task-grade').addEventListener('change',updateGradeHint);
+  byId('mobile-more').addEventListener('click',()=>document.querySelector('.sidebar').classList.toggle('open'));
   byId('editor-close').addEventListener('click',closeEditor);
   byId('editor-cancel').addEventListener('click',closeEditor);
   byId('editor-backdrop').addEventListener('click',e=>{if(e.target===byId('editor-backdrop'))closeEditor();});
