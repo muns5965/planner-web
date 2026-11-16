@@ -222,3 +222,15 @@ body.dark #completion-mode[aria-pressed="true"]::before{background:var(--brand)}
   .task-actions button[data-action="edit"] span,.task-actions button[data-action="trash"] span{display:none}
   .task-actions button[data-action="edit"],.task-actions button[data-action="trash"]{width:44px;padding:0}
 }
+
+
+/* Mobile filter controls reuse the desktop select state while showing a pill toggle. */
+.logic-chip,.reset-chip{display:none}
+@media(max-width:760px){
+  .select-label:has(#tag-mode){display:none}
+  .logic-chip,.reset-chip{display:inline-flex}
+  .logic-chip{background:var(--brand-soft);color:#0066C9;font-weight:800}
+  .reset-chip{background:#FDECEC;color:#B43143}
+  body.dark .logic-chip{background:var(--brand-soft);color:#B8D8FF}
+  body.dark .reset-chip{background:#451D22;color:#FFB0B6}
+}
