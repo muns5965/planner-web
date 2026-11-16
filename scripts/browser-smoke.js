@@ -185,7 +185,7 @@ try{
 
   const revision=await evaluate("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision");
   await send('Page.reload',{ignoreCache:true});
-  await until("document.readyState==='complete' && document.querySelector('.task-title')?.textContent==='브라우저 시험 업무'",'reload');
+  await until("document.readyState==='complete' && [...document.querySelectorAll('.task-title')].some(x=>x.textContent==='브라우저 시험 업무')",'reload');
   await check("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision==="+revision,'saved revision survives reload');
 
 
