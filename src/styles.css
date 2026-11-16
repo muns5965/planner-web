@@ -196,3 +196,29 @@ body.dark #completion-mode[aria-pressed="true"]{color:#B8D8FF}
  .task-actions button{min-height:42px}
  .editor .dialog-actions{position:sticky;bottom:0;background:var(--paper);padding:10px 0}
 }
+
+
+/* Consistent inlined outline glyphs, and persistent completion-mode switch. */
+.inline-icon{display:inline-block;vertical-align:middle;flex-shrink:0;width:18px;height:18px}
+.task-actions button{display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.task-actions button[data-action="up"],.task-actions button[data-action="down"]{
+  width:44px;min-height:44px;padding:0}
+.task-actions button[data-action="edit"],.task-actions button[data-action="trash"]{min-height:44px;padding:8px 10px}
+#completion-mode{display:inline-flex;align-items:center;gap:11px}
+#completion-mode::before{
+  content:"";order:2;position:relative;width:42px;height:24px;border-radius:999px;
+  background:#C9CDD8;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04);
+}
+#completion-mode::after{
+  content:"";order:3;width:18px;height:18px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);
+  margin-left:-50px;margin-right:5px;transform:translateX(0);transition:transform .18s;
+}
+#completion-mode[aria-pressed="true"]::before{background:var(--brand)}
+#completion-mode[aria-pressed="true"]::after{transform:translateX(18px)}
+body.dark #completion-mode::before{background:#3A3A44}
+body.dark #completion-mode[aria-pressed="true"]::before{background:var(--brand)}
+@media(max-width:760px){
+  .task-actions button[data-action="edit"] span,.task-actions button[data-action="trash"] span{display:none}
+  .task-actions button[data-action="edit"],.task-actions button[data-action="trash"]{width:44px;padding:0}
+}
