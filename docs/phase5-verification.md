@@ -5,9 +5,9 @@
 ## 산출물
 
 - 빌드 명령: `npm run build`
-- 생성 파일: `dist/franklin-planner.html` (이번 실행 74,886바이트)
+- 생성 파일: `dist/planner.html` (이번 실행 74,886바이트)
 - 배포 형식: 외부 JavaScript/CSS 의존성이 없는 단일 HTML
-- 배포 파일 제공: GitHub Actions → 성공한 실행 → `franklin-planner-single-html` 아티팩트
+- 배포 파일 제공: GitHub Actions → 성공한 실행 → `planner-single-html` 아티팩트
 - 빌드 기준: `docs/requirements-v3.4.md`
 - 검증 실행: https://github.com/muns5965/planner-web/actions/runs/43823085600
 
