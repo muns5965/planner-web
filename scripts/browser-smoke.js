@@ -7,7 +7,7 @@ import { join, resolve, dirname } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const fileUrl=pathToFileURL(resolve(root,'dist/franklin-planner.html')).href;
+const fileUrl=pathToFileURL(resolve(root,'dist/planner.html')).href;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function findChrome(){
   if(process.env.CHROME_BIN)return process.env.CHROME_BIN;
