@@ -52,6 +52,15 @@
     <section id="content" class="content-area" aria-live="polite"></section>
     <section class="footer-actions" id="footer-actions"></section>
   </main>
+  <nav class="mobile-dock" aria-label="모바일 화면 이동">
+    <div class="mobile-dock-pill">
+      <button type="button" data-view="active" class="mobile-dock-item active" aria-current="page"><span aria-hidden="true">▦</span><small>업무</small></button>
+      <button type="button" data-view="completed" class="mobile-dock-item"><span aria-hidden="true">✓</span><small>완료</small></button>
+      <button type="button" data-view="trash" class="mobile-dock-item"><span aria-hidden="true">▤</span><small>휴지통</small></button>
+      <button type="button" id="mobile-more" class="mobile-dock-item"><span aria-hidden="true">☰</span><small>메뉴</small></button>
+    </div>
+    <button type="button" class="mobile-fab" data-action="new" aria-label="새 업무 추가">+</button>
+  </nav>
   <div class="editor-backdrop" id="editor-backdrop" hidden>
     <section class="editor" role="dialog" aria-modal="true" aria-labelledby="editor-title">
       <header class="editor-header"><div><span class="eyebrow">TASK EDITOR</span><h2 id="editor-title">업무 추가</h2></div><button type="button" id="editor-close" class="icon-btn" aria-label="닫기">×</button></header>
@@ -59,7 +68,7 @@
         <input type="hidden" name="taskId" id="task-id">
         <label>업무 제목 <span class="required">*</span><input id="task-title" name="title" required maxlength="200" placeholder="해야 할 업무를 입력하세요"></label>
         <label>주요 내용<textarea name="body" id="task-body" maxlength="20000" rows="5" placeholder="진행 내용, 참고 사항"></textarea></label>
-        <div class="two-col"><label>우선순위<select name="grade" id="task-grade"><option value="A">A · 매우 중요</option><option value="B">B · 중요</option><option value="C">C · 사소</option></select></label><label>실행 예정일<input name="scheduledDate" id="task-scheduled" type="date"></label></div>
+        <div class="two-col"><label>우선순위<select name="grade" id="task-grade" aria-describedby="grade-hint"><option value="A">A · 매우 중요</option><option value="B">B · 중요</option><option value="C">C · 사소</option></select><small id="grade-hint" class="grade-hint">A · 매우 중요 — 핵심 목표와 최우선 과제</small></label><label>실행 예정일<input name="scheduledDate" id="task-scheduled" type="date"></label></div>
         <div class="two-col"><label>처리기한<input name="dueDate" id="task-due" type="date"></label><label>태그 <small>쉼표로 구분</small><input name="tags" id="task-tags" placeholder="보고, 검토"></label></div>
         <p id="form-error" role="alert" class="form-error" hidden></p>
         <div class="dialog-actions"><button type="button" id="editor-cancel" class="btn subtle">취소</button><button class="btn primary" type="submit">저장</button></div>
