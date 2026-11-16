@@ -156,3 +156,92 @@ test('pure transforms cannot mutate their frozen input', async () => {
   storage.setItem(KEY, JSON.stringify(empty()));
   assert.equal((await adapter.update(0, value => { value.items.push(task()); return value; })).reason, 'transformFailed');
 });
+
+
+test('two consecutive corrupt incidents keep both exact backups without overwriting', async () => {
+  const storage=new FakeStorage();
+  let id=0;
+  const adapter=createStorageAdapter(storage,{
+    now:()=> '2026-11-16T06:00:00.000Z',
+    random:()=> 'fixed-' + (++id)
+  });
+  storage.setItem(KEY,'{incident-one');
+  assert.equal(adapter.load().status,'corrupt');
+  const first=await adapter.reset({confirmed:true});
+  assert.equal(first.ok,true);
+  assert.equal(storage.getItem(first.backupKey),'{incident-one');
+  storage.setItem(KEY,'{incident-two');
+  assert.equal(adapter.load().status,'corrupt');
+  const second=await adapter.reset({confirmed:true});
+  assert.equal(second.ok,true);
+  assert.notEqual(second.backupKey,first.backupKey);
+  assert.equal(storage.getItem(first.backupKey),'{incident-one');
+  assert.equal(storage.getItem(second.backupKey),'{incident-two');
+  assert.deepEqual(adapter.listCorruptBackups().keys.sort(),[first.backupKey,second.backupKey].sort());
+});
+
+test('colliding backup key is never overwritten and a fresh key is used', async () => {
+  const storage=new FakeStorage();
+  let n=0;
+  const adapter=createStorageAdapter(storage,{
+    now:()=> '2026-11-16T06:00:00.000Z',
+    random:()=> ++n===1?'collision':'unique'
+  });
+  const occupied=KEY+'-corrupt-2026-11-16T06:00:00.000Z-collision';
+  storage.setItem(occupied,'important older backup');
+  storage.setItem(KEY,'{new-incident');
+  adapter.load();
+  const result=await adapter.reset({confirmed:true});
+  assert.equal(result.ok,true);
+  assert.equal(storage.getItem(occupied),'important older backup');
+  assert.equal(storage.getItem(result.backupKey),'{new-incident');
+});
+
+test('mismatched verification read of corrupt backup refuses recovery and retains primary', async () => {
+  class MismatchStorage extends FakeStorage {
+    getItem(k) {
+      const value=super.getItem(k);
+      return k.includes('-corrupt-') && value!==null?'altered copy':value;
+    }
+  }
+  const storage=new MismatchStorage(),adapter=createStorageAdapter(storage);
+  storage.setItem(KEY,'{unparsed');
+  adapter.load();
+  assert.equal((await adapter.reset({confirmed:true})).reason,'backupFailed');
+  assert.equal(storage.getItem(KEY),'{unparsed');
+  assert.equal((await adapter.update(0,add)).reason,'corrupt');
+});
+
+test('explicit external preservation permits recovery only when internal backup write fails', async () => {
+  class FailedBackupStorage extends FakeStorage {
+    setItem(k,v) {
+      if(k.includes('-corrupt-')) throw new DOMException('full','QuotaExceededError');
+      super.setItem(k,v);
+    }
+  }
+  const storage=new FailedBackupStorage(),adapter=createStorageAdapter(storage);
+  storage.setItem(KEY,'{broken');
+  assert.equal(adapter.load().status,'corrupt');
+  assert.equal((await adapter.reset({confirmed:true,externalPreserved:false})).reason,'backupFailed');
+  assert.equal(storage.getItem(KEY),'{broken');
+  const result=await adapter.reset({confirmed:true,externalPreserved:true});
+  assert.equal(result.ok,true);
+  assert.equal(result.backupKey,null);
+  assert.equal(adapter.load().status,'empty');
+});
+
+test('backup preservation confirmation cannot override a changed primary snapshot', async () => {
+  class FailedBackupStorage extends FakeStorage {
+    setItem(k,v) {
+      if(k.includes('-corrupt-')) throw new Error('storage blocked');
+      super.setItem(k,v);
+    }
+  }
+  const storage=new FailedBackupStorage(),adapter=createStorageAdapter(storage);
+  storage.setItem(KEY,'{old');
+  adapter.load();
+  storage.setItem(KEY,'{new');
+  const result=await adapter.reset({confirmed:true,externalPreserved:true});
+  assert.equal(result.reason,'conflict');
+  assert.equal(storage.getItem(KEY),'{new');
+});
