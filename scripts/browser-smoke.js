@@ -164,6 +164,40 @@ try{
   await send('Page.reload',{ignoreCache:true});
   await until("document.readyState==='complete' && document.querySelector('.task-title')?.textContent==='브라우저 시험 업무'",'reload');
   await check("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision==="+revision,'saved revision survives reload');
+
+  // Real editor update, JSON import, corrupt-data protection and restore.
+  await evaluate("window.confirm=()=>true");
+  await evaluate("document.querySelector('.task-title').click()");
+  await check("!document.querySelector('#editor-backdrop').hidden",'edit dialog opens');
+  await evaluate("document.querySelector('#task-title').value='수정한 브라우저 업무'");
+  await evaluate("document.querySelector('#task-form').requestSubmit()");
+  await until("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).items.some(x=>x.title==='수정한 브라우저 업무')",'edit saved');
+  const beforeImport=await evaluate("JSON.parse(localStorage.getItem('franklin_planner_data_v1'))");
+  const imported=structuredClone(beforeImport);
+  imported.revision=5000;
+  imported.items[0].title='JSON에서 가져온 업무';
+  const importExpression="(()=>{const input=document.querySelector('#import-file');const dt=new DataTransfer();dt.items.add(new File(["+
+    JSON.stringify(JSON.stringify(imported))+
+    "],'backup.json',{type:'application/json'}));input.files=dt.files;input.dispatchEvent(new Event('change',{bubbles:true}));})()";
+  await evaluate(importExpression);
+  await until("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).items[0].title==='JSON에서 가져온 업무'",'normal JSON import');
+  await check("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision==="+(beforeImport.revision+1),
+    'import replaces data but increments current revision');
+
+  const backup=await evaluate("JSON.parse(localStorage.getItem('franklin_planner_data_v1'))");
+  await evaluate("localStorage.setItem('franklin_planner_data_v1','{broken')");
+  await send('Page.reload',{ignoreCache:true});
+  await until("document.readyState==='complete' && !document.querySelector('#readonly-banner').hidden",'corrupt-data mode');
+  await check("document.querySelector('#new-task').disabled",'corrupt data blocks normal writes');
+  await check("localStorage.getItem('franklin_planner_data_v1')==='{broken'",'corrupt original is untouched');
+  await evaluate("window.confirm=()=>true");
+  const restoreExpression="(()=>{const input=document.querySelector('#import-file');const dt=new DataTransfer();dt.items.add(new File(["+
+    JSON.stringify(JSON.stringify(backup))+
+    "],'restore.json',{type:'application/json'}));input.files=dt.files;input.dispatchEvent(new Event('change',{bubbles:true}));})()";
+  await evaluate(restoreExpression);
+  await until("document.querySelector('#readonly-banner').hidden && JSON.parse(localStorage.getItem('franklin_planner_data_v1')).items?.length===2",'backup recovery');
+  await check("Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).some(k=>k.startsWith('franklin_planner_data_v1-corrupt-')&&localStorage.getItem(k)==='{broken')",'recovery preserves exact corrupt original');
+  console.log('PASS editor update, JSON import, corrupt mode and recovery');
   if(unexpected.length)throw Error('Uncaught browser errors:\n'+unexpected.join('\n'));
   console.log('Browser smoke PASSED: file://, edit, search, rollover, completed, trash, persistence');
 }catch(err){console.error(err.stack??String(err));process.exitCode=1;}
