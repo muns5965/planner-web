@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Chromium/Chrome CDP smoke test, no additional npm dependencies.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, readdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -164,6 +164,24 @@ try{
   await send('Page.reload',{ignoreCache:true});
   await until("document.readyState==='complete' && document.querySelector('.task-title')?.textContent==='브라우저 시험 업무'",'reload');
   await check("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision==="+revision,'saved revision survives reload');
+
+
+  const downloads=join(dir,'downloads');
+  await mkdir(downloads,{recursive:true});
+  await send('Page.setDownloadBehavior',{behavior:'allow',downloadPath:downloads});
+  await evaluate("document.querySelector('[data-action=export]').click()");
+  let exportedFile=null;
+  for(let i=0;i<120;i++){
+    const files=await readdir(downloads);
+    exportedFile=files.find(name=>name.endsWith('-backup.json'))??null;
+    if(exportedFile)break;
+    await sleep(80);
+  }
+  if(!exportedFile)throw Error('JSON export did not create an actual browser download');
+  const exported=JSON.parse(await readFile(join(downloads,exportedFile),'utf8'));
+  if(exported.revision!==revision||exported.items.length!==2)
+    throw Error('Downloaded JSON differs from stored data');
+  console.log('PASS actual JSON export download matches stored data');
 
   // Real editor update, JSON import, corrupt-data protection and restore.
   await evaluate("window.confirm=()=>true");
