@@ -16,7 +16,7 @@ test('single HTML build has inline styles and inline JavaScript, no external ass
   assert.doesNotMatch(html, /<script[^>]+src=/);
   assert.doesNotMatch(html, /<link[^>]+stylesheet/);
   assert.doesNotMatch(html, /\bimport\s*\{/);
-  assert.match(html, /Franklin Planner/);
+  assert.match(html, /<title>플래너<\/title>/);
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)?.[1];
   assert.ok(script && script.length > 25000);
   const {mkdtemp,writeFile,rm} = await import('node:fs/promises');
