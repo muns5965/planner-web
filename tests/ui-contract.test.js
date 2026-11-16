@@ -39,7 +39,7 @@ test('local preview server serves HTML and ES modules with correct content types
  assert.ok(response,'local server failed to start');
  assert.equal(response.status,200);
  assert.match(response.headers.get('content-type'),/text\/html/);
- assert.match(await response.text(),/Franklin Planner/);
+ assert.match(await response.text(),/플래너/);
  const module=await fetch('http://127.0.0.1:'+port+'/src/ui.js');
  assert.equal(module.status,200);
  assert.match(module.headers.get('content-type'),/text\/javascript/);
