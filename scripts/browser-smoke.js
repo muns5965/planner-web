@@ -58,10 +58,10 @@ async function connect(){
     if(m.error)p.reject(Error(JSON.stringify(m.error)));else p.resolve(m.result);
   });
 }
-function send(method,params={}){
+function send(method,params={},sessionId=null){
   return new Promise((resolve,reject)=>{
     const current=++id;pending.set(current,{resolve,reject});
-    socket.send(JSON.stringify({id:current,method,params}));
+    socket.send(JSON.stringify({...sessionId?{sessionId}:{},id:current,method,params}));
   });
 }
 async function evaluate(expression){
@@ -71,6 +71,20 @@ async function evaluate(expression){
   if(response.exceptionDetails)throw Error(
     response.exceptionDetails.exception?.description??response.exceptionDetails.text);
   return response.result?.value;
+}
+async function evaluateSession(sessionId,expression){
+  const response=await send('Runtime.evaluate',
+    {expression,returnByValue:true,awaitPromise:true,userGesture:true},sessionId);
+  if(response.exceptionDetails)throw Error(response.exceptionDetails.exception?.description??
+    response.exceptionDetails.text??'secondary tab evaluation exception');
+  return response.result?.value;
+}
+async function untilSession(sessionId,expression,label){
+  for(let i=0;i<120;i++){
+    if(await evaluateSession(sessionId,expression))return;
+    await sleep(80);
+  }
+  throw Error('Timeout secondary tab: '+label);
 }
 async function until(expression,label){
   for(let i=0;i<120;i++){
@@ -216,6 +230,50 @@ try{
   await until("document.querySelector('#readonly-banner').hidden && JSON.parse(localStorage.getItem('franklin_planner_data_v1')).items?.length===2",'backup recovery');
   await check("Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).some(k=>k.startsWith('franklin_planner_data_v1-corrupt-')&&localStorage.getItem(k)==='{broken')",'recovery preserves exact corrupt original');
   console.log('PASS editor update, JSON import, corrupt mode and recovery');
+
+  // Two separate Chromium tabs with the same file:// URL.
+  // The second tab changes the real localStorage; the first tab must receive
+  // a storage event and forbid ordinary editing until the data is reloaded.
+  const secondTarget=await send('Target.createTarget',{url:fileUrl});
+  const secondAttach=await send('Target.attachToTarget',
+    {targetId:secondTarget.targetId,flatten:true});
+  const sid=secondAttach.sessionId;
+  await send('Runtime.enable',{},sid);
+  await untilSession(sid,"document.readyState==='complete' && !!document.querySelector('#new-task')",'second tab startup');
+  await evaluateSession(sid,"(()=>{const raw=JSON.parse(localStorage.getItem('franklin_planner_data_v1'));raw.revision++;localStorage.setItem('franklin_planner_data_v1',JSON.stringify(raw));})()");
+  await until("!document.querySelector('#readonly-banner').hidden && document.querySelector('#new-task').disabled",
+    'first tab detects second tab change');
+  await check("document.querySelector('#readonly-title').textContent==='다른 탭에서 변경됨'",
+    'storage event blocks stale tab');
+  const afterSecond=await evaluateSession(sid,"localStorage.getItem('franklin_planner_data_v1')");
+  await evaluate("document.querySelector('[data-action=new]').click()");
+  await check("document.querySelector('#editor-backdrop').hidden",'stale tab refuses new task editor');
+  const compareFirst=await evaluate("localStorage.getItem('franklin_planner_data_v1')");
+  if(compareFirst!==afterSecond)throw Error('stale-tab edit unexpectedly wrote storage');
+  await evaluate("document.querySelector('#refresh').click()");
+  await until("document.querySelector('#readonly-banner').hidden && !document.querySelector('#new-task').disabled",
+    'stale tab refreshed');
+  console.log('PASS two-tab storage event blocks stale writes and refresh restores editing');
+
+  // A recovery dialog can become stale after the other tab changes the primary.
+  // Recovery must not overwrite another tab's later content.
+  await evaluate("localStorage.setItem('franklin_planner_data_v1','{stale-recovery')");
+  await send('Page.reload',{ignoreCache:true});
+  await until("document.readyState==='complete' && !document.querySelector('#readonly-banner').hidden",
+    'recovery page opened');
+  await evaluateSession(sid,"(()=>{const saved={schemaVersion:1,revision:100,items:[]};localStorage.setItem('franklin_planner_data_v1',JSON.stringify(saved));})()");
+  await until("document.querySelector('#readonly-banner').hidden===false",'stale recovery banner retained');
+  const beforeStaleRestore=await evaluateSession(sid,"localStorage.getItem('franklin_planner_data_v1')");
+  const staleImport="(()=>{const input=document.querySelector('#import-file');const dt=new DataTransfer();dt.items.add(new File(["+
+    JSON.stringify(JSON.stringify(backup))+
+    "],'restore-stale.json',{type:'application/json'}));input.files=dt.files;input.dispatchEvent(new Event('change',{bubbles:true}));})()";
+  await evaluate("window.confirm=()=>true");
+  await evaluate(staleImport);
+  await sleep(250);
+  const afterStaleRestore=await evaluateSession(sid,"localStorage.getItem('franklin_planner_data_v1')");
+  if(beforeStaleRestore!==afterStaleRestore)throw Error('stale recovery overwrote another tab');
+  console.log('PASS stale recovery preview cannot overwrite another tab update');
+  await send('Target.detachFromTarget',{sessionId:sid});
   if(unexpected.length)throw Error('Uncaught browser errors:\n'+unexpected.join('\n'));
   console.log('Browser smoke PASSED: file://, edit, search, rollover, completed, trash, persistence');
 }catch(err){console.error(err.stack??String(err));process.exitCode=1;}
