@@ -15,7 +15,7 @@ const exportPattern = /\bexport\s+(?=(?:async\s+)?(?:function|const|let|class)\s
 
 async function generate() {
   const [html, css] = await Promise.all([src('index.html'), src('src/styles.css')]);
-  let combined = "/* Franklin Planner: locally bundled, schema v1 */\n";
+  let combined = "/* Planner: locally bundled, schema v1 */\n";
   combined += "const __plannerModules = Object.create(null);\n";
   for (const filename of moduleOrder) {
     const source = await src('src/' + filename);
