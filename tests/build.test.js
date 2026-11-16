@@ -6,7 +6,7 @@ import { promisify } from 'node:util';
 
 const exec = promisify(execFile);
 const root = new URL('../', import.meta.url);
-const generated = new URL('../dist/franklin-planner.html', import.meta.url);
+const generated = new URL('../dist/planner.html', import.meta.url);
 
 test('single HTML build has inline styles and inline JavaScript, no external assets', async () => {
   await exec(process.execPath, ['scripts/build-single-html.js'], {cwd:root});
