@@ -68,15 +68,15 @@ function failResult(result){
   toast(map[result?.reason]??'작업을 완료하지 못했습니다.',true);
 }
 async function commit(transform,successText='저장했습니다.'){
-  if(!canWrite()){toast('현재 데이터를 수정할 수 없습니다. 저장 상태를 확인하십시오.',true);return false;}
+  if(!canWrite()){render();toast('현재 데이터를 수정할 수 없습니다. 저장 상태를 확인하십시오.',true);return false;}
   // Skip no-op without incrementing revision; update re-runs the transform on freshly loaded data.
   let proposed;
-  try {proposed=transform(state.data);} catch(error){toast(error.message,true);return false;}
+  try {proposed=transform(state.data);} catch(error){render();toast(error.message,true);return false;}
   if(proposed===state.data){toast('변경 사항이 없습니다.');return true;}
   state.busy=true;
   try {
     const result=await adapter.update(state.data.revision,transform);
-    if(!result.ok){failResult(result);return false;}
+    if(!result.ok){failResult(result);render();return false;}
     state.data=result.data;
     state.status=state.data.items.length?'ok':'empty';
     state.selectedTags=pruneSelectedTags(state.data,state.selectedTags);
