@@ -140,8 +140,11 @@ try{
     width:390,height:844,deviceScaleFactor:1,mobile:true
   });
   await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
-  await evaluate("window.scrollTo(0,0)");
+  await evaluate("document.querySelectorAll('.drag-handle')[1].scrollIntoView({block:'center'})");
+  await sleep(100);
   const coordinates=await evaluate("(()=>{const rows=[...document.querySelectorAll('.task-row')];const ordered=rows.sort((a,b)=>Number(a.querySelector('.rank').textContent.slice(1))-Number(b.querySelector('.rank').textContent.slice(1)));const handle=ordered[1].querySelector('.drag-handle').getBoundingClientRect();const target=ordered[0].getBoundingClientRect();return {from:{x:handle.x+handle.width/2,y:handle.y+handle.height/2},to:{x:target.x+30,y:target.y+target.height/4}}})()");
+  console.log('Mobile touch coordinates:',JSON.stringify(coordinates));
+  console.log('Touch targets:',await evaluate("JSON.stringify({from:document.elementFromPoint("+coordinates.from.x+","+coordinates.from.y+")?.className,to:document.elementFromPoint("+coordinates.to.x+","+coordinates.to.y+")?.className})"));
   const storedRevision=await evaluate("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision");
   await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...coordinates.from,id:1}]});
   await send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
@@ -149,7 +152,10 @@ try{
   await check("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision==="+storedRevision,'pointercancel keeps revision unchanged');
   await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...coordinates.from,id:2}]});
   await send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...coordinates.to,id:2}]});
+  await sleep(120);
   await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await sleep(120);
+  console.log('Touch after release:',await evaluate("JSON.stringify({revision:JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision,positions:[...document.querySelectorAll('.task-row')].map(x=>x.querySelector('.rank').textContent),dragging:document.querySelectorAll('.dragging').length})"));
   await until("JSON.parse(localStorage.getItem('franklin_planner_data_v1')).revision==="+(storedRevision+1),'touch reorder saved');
   console.log('PASS mobile touch moves task order and commits once');
 
