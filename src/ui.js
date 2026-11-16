@@ -209,7 +209,7 @@ async function exportRaw(){
   const blob=new Blob([raw.raw??''],{type:'application/json;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const link=document.createElement('a');link.href=url;
-  link.download='franklin-planner-'+localDate()+'-backup.json';link.click();
+  link.download='planner-'+localDate()+'-backup.json';link.click();
   setTimeout(()=>URL.revokeObjectURL(url),5000);
   toast('JSON 다운로드를 요청했습니다. 실제 저장 여부를 확인하십시오.');
 }
