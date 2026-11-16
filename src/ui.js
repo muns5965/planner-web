@@ -120,7 +120,8 @@ function renderTask(task){
     buttons='<button type="button" data-action="edit" data-id="'+id+'">수정</button>';
     if(state.view==='completed')buttons+='<button type="button" class="strong" data-action="reopen" data-id="'+id+'">완료 취소</button>';
     else {
-      if(state.completionMode)buttons+='<button type="button" class="strong" data-action="complete" data-id="'+id+'">✓ 완료</button>';
+      if(state.completionMode)buttons+='<label class="completion-check"><input type="checkbox" data-action="checkbox-complete" data-id="'+id+'"> 완료</label>';
+      buttons+='<label class="rank-control">순번 <input type="number" min="0" max="'+(countActive(task.grade)-1)+'" value="'+task.order+'" data-action="rank" data-id="'+id+'" aria-label="우선순위 순번"></label>';
       buttons+='<button type="button" title="위로 이동" aria-label="위로 이동" data-action="up" data-id="'+id+'">↑</button>'+
         '<button type="button" title="아래로 이동" aria-label="아래로 이동" data-action="down" data-id="'+id+'">↓</button>'+
         '<select aria-label="등급 이동" data-action="move-grade" data-id="'+id+'">'+
@@ -261,14 +262,14 @@ async function importFromFile(file){
     '현재 손상 데이터를 보관하고 백업으로 복구합니다. 계속하시겠습니까?':
     '현재 저장된 업무 전체를 가져온 파일로 대체합니다. 계속하시겠습니까?');
   if(!confirmed)return;
-  const result=corrupt?await adapter.restore(backup,{confirmed:true}):
+  const result=corrupt?await adapter.restore(backup,{confirmed:true,externalPreserved:byId('recovery-preserved').checked}):
     await adapter.importBackup(backup,state.data.revision,true);
   if(!result.ok){failResult(result);return;}
   rollover.invalidate();readCurrent();toast('백업 데이터를 적용했습니다.');
 }
 async function resetRecovery(){
   if(!['corrupt','unsupportedVersion'].includes(state.status))return;
-  if(!window.confirm('손상 원본을 먼저 내보내거나 복사했습니까? 보존하지 않았다면 취소하십시오.'))return;
+  if(!byId('recovery-preserved').checked){toast('원본을 실제로 별도 보존한 뒤 확인 체크를 선택하십시오.',true);return;}
   if(!window.confirm('원본을 외부에 보존했음을 확인합니다. 복구용 내부 사본도 생성한 뒤 업무 목록을 초기화합니다. 계속하시겠습니까?'))return;
   const result=await adapter.reset({confirmed:true,externalPreserved:true});
   if(!result.ok){failResult(result);return;}
@@ -373,6 +374,12 @@ function setup(){
   byId('content').addEventListener('change',event=>{
     const el=event.target,id=el.dataset.id,task=state.data.items.find(t=>t.id===id);
     if(!task)return;
+    if(el.dataset.action==='checkbox-complete' && el.checked)
+      commit(data=>completeTask(data,id,localDate(),new Date().toISOString()),'완료 처리했습니다.');
+    if(el.dataset.action==='rank'){
+      const index=Number(el.value);
+      commit(data=>moveWithinGrade(data,id,index),'순서를 변경했습니다.');
+    }
     if(el.dataset.action==='move-grade'&&el.value!==task.grade)
       commit(data=>moveTask(data,id,el.value,countActive(el.value)),'등급을 이동했습니다.');
   });
