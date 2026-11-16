@@ -30,6 +30,7 @@ npm run test:browser
 
 - **요구사항:** [docs/requirements-v3.4.md](docs/requirements-v3.4.md)
 - **개발 지침:** [docs/development-guide.md](docs/development-guide.md)
+- **5차 검증 보고:** [docs/phase5-verification.md](docs/phase5-verification.md)
 - **1차:** `src/storage.js` 저장·복구, `src/validator.js` 검증
 - **2차:** `src/tasks.js` 완료·순번·등급·태그
 - **3차:** `src/dates-trash.js` 날짜·이월·휴지통
