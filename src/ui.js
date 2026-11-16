@@ -10,6 +10,15 @@ import { validateData, normalizeTagKey } from './validator.js';
 const byId = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Inline SVG icons: no external font, image or network dependency.
+const iconPaths={
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"/>',
+  up:'<path d="m18 15-6-6-6 6"/>',
+  down:'<path d="m6 9 6 6 6-6"/>',
+  trash:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 10v7M14 10v7"/>',
+  grip:'<circle cx="9" cy="5" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="19" r="1"/>'
+};
+const svgIcon=name=>'<svg class="inline-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+iconPaths[name]+'</svg>';
 const grades = [{grade:'A',label:'매우 중요',sub:'핵심 목표와 최우선 과제'},
   {grade:'B',label:'중요',sub:'중요하고 계획적인 업무'},
   {grade:'C',label:'사소',sub:'일상 및 부수 업무'}];
@@ -134,21 +143,21 @@ function renderTask(task){
     buttons='<button type="button" data-action="restore" data-id="'+id+'">복원</button>'+
       '<button type="button" data-action="delete-forever" data-id="'+id+'">영구 삭제</button>';
   } else {
-    buttons='<button type="button" data-action="edit" data-id="'+id+'">수정</button>';
+    buttons='<button type="button" data-action="edit" data-id="'+id+'">'+svgIcon('edit')+'<span>수정</span></button>';
     if(state.view==='completed')buttons+='<button type="button" class="strong" data-action="reopen" data-id="'+id+'">완료 취소</button>';
     else {
       if(state.completionMode)buttons+='<label class="completion-check"><input type="checkbox" data-action="checkbox-complete" data-id="'+id+'"> 완료</label>';
       buttons+='<label class="rank-control">순번 <input type="number" min="0" max="'+(countActive(task.grade)-1)+'" value="'+task.order+'" data-action="rank" data-id="'+id+'" aria-label="우선순위 순번"></label>';
-      buttons+='<button type="button" title="위로 이동" aria-label="위로 이동" data-action="up" data-id="'+id+'">↑</button>'+
-        '<button type="button" title="아래로 이동" aria-label="아래로 이동" data-action="down" data-id="'+id+'">↓</button>'+
+      buttons+='<button type="button" title="위로 이동" aria-label="위로 이동" data-action="up" data-id="'+id+'">'+svgIcon('up')+'</button>'+
+        '<button type="button" title="아래로 이동" aria-label="아래로 이동" data-action="down" data-id="'+id+'">'+svgIcon('down')+'</button>'+
         '<select aria-label="등급 이동" data-action="move-grade" data-id="'+id+'">'+
         grades.map(g=>'<option value="'+g.grade+'"'+(task.grade===g.grade?' selected':'')+'>'+g.grade+'</option>').join('')+
         '</select>';
     }
-    buttons+='<button type="button" data-action="trash" data-id="'+id+'">휴지통</button>';
+    buttons+='<button type="button" data-action="trash" data-id="'+id+'">'+svgIcon('trash')+'<span>휴지통</span></button>';
   }
   const movable=state.view==='active'&&!hasActiveFilter(state);
-  const drag=movable?'<span class="drag-handle" draggable="true" tabindex="0" role="button" aria-label="끌어서 순서 변경. 키보드 위아래 화살표로 이동" data-id="'+id+'" title="끌어서 순서 변경">⋮⋮</span>':'';
+  const drag=movable?'<span class="drag-handle" draggable="true" tabindex="0" role="button" aria-label="끌어서 순서 변경. 키보드 위아래 화살표로 이동" data-id="'+id+'" title="끌어서 순서 변경">'+svgIcon('grip')+'</span>':'';
   return '<article class="task-row" data-id="'+id+'" data-grade="'+escapeHtml(task.grade)+'">'+
     '<span class="rank">'+rank+'</span><div class="task-content"><button class="task-title" type="button" data-action="edit" data-id="'+id+'">'+escapeHtml(task.title)+'</button>'+
     (task.body?'<button type="button" class="memo-toggle" data-action="memo" data-id="'+id+'" aria-expanded="'+String(state.expandedMemo.has(task.id))+'">≡ 메모 '+(state.expandedMemo.has(task.id)?'접기':'보기')+'</button>':'')+
