@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createStorageAdapter } from '../src/storage.js';
 import { classifyRaw, validateData, isValidLocalDate } from '../src/validator.js';
 
-const KEY = 'franklin_planner_data_v1';
+const KEY = 'planner_data_v1';
 class FakeStorage {
   #data = new Map();
   throwRead = false;
@@ -244,4 +244,56 @@ test('backup preservation confirmation cannot override a changed primary snapsho
   const result=await adapter.reset({confirmed:true,externalPreserved:true});
   assert.equal(result.reason,'conflict');
   assert.equal(storage.getItem(KEY),'{new');
+});
+
+
+test('legacy browser data is copied exactly to neutral storage key and old key retired', () => {
+  const storage=new FakeStorage();
+  const old='franklin_planner_data_v1';
+  const data={...empty(),revision:9,items:[task()]};
+  const raw=JSON.stringify(data);
+  storage.setItem(old,raw);
+  const adapter=createStorageAdapter(storage);
+  const loaded=adapter.load();
+  assert.equal(loaded.status,'ok');
+  assert.deepEqual(loaded.data,data);
+  assert.equal(storage.getItem(KEY),raw);
+  assert.equal(storage.getItem(old),null);
+});
+
+test('a populated new key wins over stale legacy data', () => {
+  const storage=new FakeStorage();
+  const old='franklin_planner_data_v1';
+  storage.setItem(KEY,JSON.stringify({...empty(),revision:2,items:[]}));
+  storage.setItem(old,JSON.stringify({...empty(),revision:8,items:[task()]}));
+  const loaded=createStorageAdapter(storage).load();
+  assert.equal(loaded.status,'empty');
+  assert.equal(loaded.data.revision,2);
+  assert.notEqual(storage.getItem(old),null);
+});
+
+test('failed migration never presents legacy data as empty first run', async () => {
+  class BlockNewKeyStorage extends FakeStorage {
+    setItem(k,v) {
+      if(k===KEY)throw new DOMException('full','QuotaExceededError');
+      return super.setItem(k,v);
+    }
+  }
+  const storage=new BlockNewKeyStorage(), old='franklin_planner_data_v1';
+  const raw=JSON.stringify({...empty(),items:[task()]});
+  storage.setItem(old,raw);
+  const adapter=createStorageAdapter(storage);
+  assert.equal(adapter.load().status,'unavailable');
+  assert.equal((await adapter.update(0,add)).reason,'unavailable');
+  assert.equal(storage.getItem(KEY),null);
+  assert.equal(storage.getItem(old),raw);
+});
+
+test('legacy corrupt storage migrates without changing bytes and enters recovery mode', () => {
+  const storage=new FakeStorage(),old='franklin_planner_data_v1';
+  storage.setItem(old,'{broken-legacy');
+  const adapter=createStorageAdapter(storage);
+  assert.equal(adapter.load().status,'corrupt');
+  assert.equal(storage.getItem(KEY),'{broken-legacy');
+  assert.equal(storage.getItem(old),null);
 });
