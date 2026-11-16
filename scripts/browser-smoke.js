@@ -17,18 +17,19 @@ function findChrome(){
   }
   throw Error('Chromium or Chrome is required; browser test cannot run');
 }
-const port=37219;
+const port=37000+(process.pid%20000);
 const dir=await mkdtemp(join(tmpdir(),'franklin-chrome-'));
 const child=spawn(findChrome(),[
   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
   '--no-first-run','--no-default-browser-check','--disable-background-networking',
   '--remote-allow-origins=*','--remote-debugging-port='+port,'--user-data-dir='+dir,'about:blank'
-],{stdio:'ignore'});
+],{stdio:['ignore','ignore','pipe']});
+let chromeStderr='';child.stderr?.on('data',chunk=>{chromeStderr+=String(chunk);if(chromeStderr.length>8000)chromeStderr=chromeStderr.slice(-8000);});
 let socket,id=0,unexpected=[];
 const pending=new Map();
 async function connect(){
   let pages;
-  for(let n=0;n<120;n++){
+  for(let n=0;n<350;n++){
     if(child.exitCode!==null)throw Error('Chrome stopped prematurely');
     try{
       const response=await fetch('http://127.0.0.1:'+port+'/json/list');
@@ -40,7 +41,7 @@ async function connect(){
     await sleep(100);
   }
   const target=pages?.find(p=>p.type==='page');
-  if(!target)throw Error('Chrome debugging target unavailable');
+  if(!target)throw Error('Chrome debugging target unavailable; stderr: '+chromeStderr.slice(-2000));
   socket=new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve,reject)=>{
     socket.addEventListener('open',resolve,{once:true});
