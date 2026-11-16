@@ -18,7 +18,7 @@ npm run dev
 npm run build
 ```
 
-결과물은 `dist/franklin-planner.html`이며, CSS와 JavaScript를 포함한 단일 파일입니다. HTML을 더블클릭하여 `file://`로 실행할 수 있도록 제작했습니다. [GitHub Actions](https://github.com/muns5965/planner-web/actions)에서 최근 성공한 **Build and tests** 실행을 열고 **Artifacts → `franklin-planner-single-html`**에서 ZIP을 내려받을 수 있습니다(로그인이 필요할 수 있음). 브라우저별 저장 지속성은 반드시 별도 확인하십시오.
+결과물은 `dist/planner.html`이며, CSS와 JavaScript를 포함한 단일 파일입니다. HTML을 더블클릭하여 `file://`로 실행할 수 있도록 제작했습니다. [GitHub Actions](https://github.com/muns5965/planner-web/actions)에서 최근 성공한 **Build and tests** 실행을 열고 **Artifacts → `planner-single-html`**에서 ZIP을 내려받을 수 있습니다(로그인이 필요할 수 있음). 브라우저별 저장 지속성은 반드시 별도 확인하십시오.
 
 ## 자동화 시험
 
