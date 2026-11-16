@@ -13,5 +13,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run data-layer tests
+      - name: Syntax-check browser entry and dev server
+        run: npm run check
+      - name: Run all automated tests
         run: npm test
