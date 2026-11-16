@@ -234,3 +234,15 @@ body.dark #completion-mode[aria-pressed="true"]::before{background:var(--brand)}
   body.dark .logic-chip{background:var(--brand-soft);color:#B8D8FF}
   body.dark .reset-chip{background:#451D22;color:#FFB0B6}
 }
+
+
+/* Unify SVG navigation with the mockup's outline icon language. */
+.side-link{display:flex;align-items:center;gap:12px}
+.side-link .nav-svg{width:20px;height:20px;flex-shrink:0}
+.side-link #theme-label{display:inline;min-width:0;width:auto}
+.mobile-dock-item .nav-svg{width:21px;height:21px}
+.icon-btn{display:inline-grid;place-items:center}
+.icon-btn .nav-svg{width:22px;height:22px}
+.search-field .nav-svg{width:20px;height:20px;color:#8C96A8}
+body.dark .search-field .nav-svg{color:#A7ABB7}
+@media(max-width:760px){.mobile-dock-item .nav-svg{flex-shrink:0}}
